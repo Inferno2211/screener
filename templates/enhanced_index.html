@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced EMA Screener - NSE Markets</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #16a34a;
+            --danger-color: #dc2626;
+            --warning-color: #ca8a04;
+            --info-color: #0891b2;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+        }
+
+        /* Light theme (default) */
+        .theme-light {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1f2937;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dark theme */
+        .theme-dark {
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --border-color: #374151;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table-container {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .table {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .table th {
+            background-color: var(--bg-secondary);
+            border: none;
+            color: var(--text-primary);
+            font-weight: 600;
+            padding: 1rem;
+        }
+
+        .table td {
+            border: none;
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .ema-toggle-buttons {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .ema-btn {
+            margin: 0.25rem;
+            min-width: 80px;
+            font-weight: 600;
+        }
+
+        .ema-btn.active {
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5);
+        }
+
+        .filter-section {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .form-control,
+        .form-select {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: var(--bg-primary);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+        }
+
+        .badge-above {
+            background-color: var(--success-color);
+        }
+
+        .badge-below {
+            background-color: var(--danger-color);
+        }
+
+        .badge-within-band {
+            background-color: var(--info-color);
+        }
+
+        .distance-positive {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .distance-negative {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 40px;
+            right: 20px;
+            z-index: 1000;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+        }
+
+        .auto-refresh {
+            position: fixed;
+            top: 10px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .row-number {
+            font-weight: bold;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .symbol-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .ema-value {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background-color: var(--success-color);
+        }
+
+        .status-offline {
+            background-color: var(--danger-color);
+        }
+
+        .band-percentage-input {
+            max-width: 100px;
+        }
+    </style>
+</head>
+
+<body class="theme-light">
+    <!-- Theme toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="themeIcon"></i>
+        <span id="themeText">Dark</span>
+    </button>
+
+    <!-- Auto-refresh toggle -->
+    <div class="auto-refresh">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+            <label class="form-check-label" for="autoRefresh">
+                <small>Auto-refresh</small>
+            </label>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Enhanced EMA Screener
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">
+                        50/100/200-Day EMA Analysis with Band Filtering for NSE Total Market
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex align-items-center justify-content-end">
+                        <span class="status-indicator status-online" id="statusIndicator"></span>
+                        <span id="lastUpdate" class="small">Loading...</span>
+                    </div>
+                    <button class="btn btn-light btn-sm mt-2" onclick="updateData()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Update Data
+                    </button>
+                    <button class="btn btn-warning btn-sm mt-2 ms-1" onclick="runSetup()">
+                        <i class="fas fa-cog me-1"></i>
+                        Setup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- EMA Toggle Buttons -->
+        <div class="ema-toggle-buttons">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-3">EMA Filter</h5>
+                    <div class="btn-group flex-wrap w-100" role="group">
+                        <button type="button" class="btn btn-outline-primary ema-btn active" data-ema="all"
+                            onclick="setEMAFilter('all')">
+                            ALL
+                        </button>
+                        <button type="button" class="btn btn-outline-success ema-btn" data-ema="50"
+                            onclick="setEMAFilter('50')">
+                            50-EMA Band
+                        </button>
+                        <button type="button" class="btn btn-outline-info ema-btn" data-ema="100"
+                            onclick="setEMAFilter('100')">
+                            100-EMA Band
+                        </button>
+                        <button type="button" class="btn btn-outline-warning ema-btn" data-ema="200"
+                            onclick="setEMAFilter('200')">
+                            200-EMA Band
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Band Percentage (±%)</label>
+                            <input type="number" class="form-control band-percentage-input" id="bandPercentage"
+                                value="2.5" min="0.1" max="10" step="0.1" onchange="applyFilters()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Active Filter</label>
+                            <div class="form-control" style="background-color: var(--bg-secondary);">
+                                <span id="activeFilter">All Stocks</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="row mb-4" id="summarySection">
+            <div class="col-6 col-lg-2 col-md-4 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-primary" id="totalStocks">-</div>
+                    <div class="stat-label">Total Stocks</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-2 col-md-4 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-success" id="aboveEMA50">-</div>
+                    <div class="stat-label">Above 50-EMA</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-2 col-md-4 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-info" id="aboveEMA100">-</div>
+                    <div class="stat-label">Above 100-EMA</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-2 col-md-4 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-warning" id="aboveEMA200">-</div>
+                    <div class="stat-label">Above 200-EMA</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-2 col-md-4 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-danger" id="avgDistance">-</div>
+                    <div class="stat-label">Avg Distance</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-2 col-md-4 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-secondary" id="filteredCount">-</div>
+                    <div class="stat-label">Filtered Count</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Controls -->
+        <div class="filter-section">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Sort By</label>
+                    <select class="form-select" id="sortBy" onchange="applyFilters()">
+                        <option value="SYMBOL">Symbol</option>
+                        <option value="EMA_50">50-EMA Value</option>
+                        <option value="EMA_100">100-EMA Value</option>
+                        <option value="EMA_200">200-EMA Value</option>
+                        <option value="DISTANCE_FROM_EMA_50">Distance from 50-EMA</option>
+                        <option value="DISTANCE_FROM_EMA_100">Distance from 100-EMA</option>
+                        <option value="DISTANCE_FROM_EMA_200">Distance from 200-EMA</option>
+                        <option value="LAST_CLOSE">Last Close Price</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Sort Order</label>
+                    <select class="form-select" id="sortOrder" onchange="applyFilters()">
+                        <option value="asc">Ascending</option>
+                        <option value="desc">Descending</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Search Symbol</label>
+                    <input type="text" class="form-control" id="searchTerm" placeholder="e.g., RELIANCE"
+                        onkeyup="applyFilters()" onchange="applyFilters()">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Quick Actions</label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-container">
+            <div id="loadingIndicator" class="loading">
+                <div class="spinner"></div>
+                <p class="mt-3">Loading enhanced EMA data...</p>
+            </div>
+
+            <div id="dataTable" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Symbol</th>
+                                <th>Last Close</th>
+                                <th>50-EMA</th>
+                                <th>100-EMA</th>
+                                <th>200-EMA</th>
+                                <th>Distance (50)</th>
+                                <th>Distance (100)</th>
+                                <th>Distance (200)</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="noDataMessage" style="display: none;" class="text-center p-5">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No EMA data available</h5>
+                <p class="text-muted">Please run the enhanced setup first to download and calculate EMA data.</p>
+                <button class="btn btn-primary" onclick="runSetup()">
+                    <i class="fas fa-cog me-1"></i>
+                    Run Enhanced Setup
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-5 mb-3">
+            <small class="text-muted">
+                Enhanced EMA Screener v2.0 | 50/100/200 EMAs with Band Filtering |
+                <span id="totalFiltered">0</span> stocks shown
+            </small>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let autoRefreshInterval;
+        let currentData = [];
+        let currentEMAFilter = 'all';
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function () {
+            loadEMAData();
+            setupAutoRefresh();
+        });
+
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+
+            if (body.classList.contains('theme-light')) {
+                body.classList.remove('theme-light');
+                body.classList.add('theme-dark');
+                themeIcon.className = 'fas fa-sun';
+                themeText.textContent = 'Light';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('theme-dark');
+                body.classList.add('theme-light');
+                themeIcon.className = 'fas fa-moon';
+                themeText.textContent = 'Dark';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            toggleTheme();
+        }
+
+        // EMA Filter management
+        function setEMAFilter(filter) {
+            currentEMAFilter = filter;
+
+            // Update button states
+            document.querySelectorAll('.ema-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-ema="${filter}"]`).classList.add('active');
+
+            // Update active filter display
+            const filterTexts = {
+                'all': 'All Stocks',
+                '50': '50-EMA Band (±' + document.getElementById('bandPercentage').value + '%)',
+                '100': '100-EMA Band (±' + document.getElementById('bandPercentage').value + '%)',
+                '200': '200-EMA Band (±' + document.getElementById('bandPercentage').value + '%)'
+            };
+            document.getElementById('activeFilter').textContent = filterTexts[filter];
+
+            loadEMAData();
+        }
+
+        // Load EMA data from the API
+        async function loadEMAData() {
+            try {
+                const bandPercentage = document.getElementById('bandPercentage').value;
+                const params = new URLSearchParams({
+                    ema_filter: currentEMAFilter,
+                    band_percentage: bandPercentage
+                });
+
+                const response = await fetch(`/api/ema-data?${params}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    currentData = result.data;
+                    updateSummaryStats(result.summary);
+                    displayData(result.data);
+                    updateLastUpdateTime(result.summary.last_update);
+                    setStatus('online');
+                } else {
+                    showNoDataMessage(result.message);
+                    setStatus('offline');
+                }
+            } catch (error) {
+                console.error('Error loading EMA data:', error);
+                showNoDataMessage('Failed to load data. Please check the connection.');
+                setStatus('offline');
+            }
+        }
+
+        // Update summary statistics
+        function updateSummaryStats(summary) {
+            document.getElementById('totalStocks').textContent = summary.total_stocks.toLocaleString();
+            document.getElementById('aboveEMA50').textContent = summary.above_ema_50.toLocaleString();
+            document.getElementById('aboveEMA100').textContent = summary.above_ema_100.toLocaleString();
+            document.getElementById('aboveEMA200').textContent = summary.above_ema_200.toLocaleString();
+
+            // Show average distance based on current filter
+            let avgDistance = 0;
+            if (currentEMAFilter === '50') avgDistance = summary.avg_distance_50;
+            else if (currentEMAFilter === '100') avgDistance = summary.avg_distance_100;
+            else if (currentEMAFilter === '200') avgDistance = summary.avg_distance_200;
+            else avgDistance = (summary.avg_distance_50 + summary.avg_distance_100 + summary.avg_distance_200) / 3;
+
+            document.getElementById('avgDistance').textContent = avgDistance.toFixed(2) + '%';
+            document.getElementById('filteredCount').textContent = summary.total_stocks.toLocaleString();
+        }
+
+        // Display data in the table
+        function displayData(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                showNoDataMessage('No stocks match the current filters.');
+                return;
+            }
+
+            data.forEach(stock => {
+                const row = document.createElement('tr');
+
+                const getDistanceClass = (distance) => distance >= 0 ? 'distance-positive' : 'distance-negative';
+                const getDistanceSign = (distance) => distance >= 0 ? '+' : '';
+
+                row.innerHTML = `
+                    <td class="row-number">${stock.ROW_NUMBER || ''}</td>
+                    <td class="symbol-name">${stock.SYMBOL}</td>
+                    <td>₹${stock.LAST_CLOSE ? stock.LAST_CLOSE.toFixed(2) : 'N/A'}</td>
+                    <td class="ema-value">₹${stock.EMA_50 ? stock.EMA_50.toFixed(2) : 'N/A'}</td>
+                    <td class="ema-value">₹${stock.EMA_100 ? stock.EMA_100.toFixed(2) : 'N/A'}</td>
+                    <td class="ema-value">₹${stock.EMA_200 ? stock.EMA_200.toFixed(2) : 'N/A'}</td>
+                    <td><span class="${getDistanceClass(stock.DISTANCE_FROM_EMA_50)}">${getDistanceSign(stock.DISTANCE_FROM_EMA_50)}${stock.DISTANCE_FROM_EMA_50 ? stock.DISTANCE_FROM_EMA_50.toFixed(2) : 'N/A'}%</span></td>
+                    <td><span class="${getDistanceClass(stock.DISTANCE_FROM_EMA_100)}">${getDistanceSign(stock.DISTANCE_FROM_EMA_100)}${stock.DISTANCE_FROM_EMA_100 ? stock.DISTANCE_FROM_EMA_100.toFixed(2) : 'N/A'}%</span></td>
+                    <td><span class="${getDistanceClass(stock.DISTANCE_FROM_EMA_200)}">${getDistanceSign(stock.DISTANCE_FROM_EMA_200)}${stock.DISTANCE_FROM_EMA_200 ? stock.DISTANCE_FROM_EMA_200.toFixed(2) : 'N/A'}%</span></td>
+                    <td><small class="text-muted">${stock.DATE || 'N/A'}</small></td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+
+            // Show table and hide loading/no data messages
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('noDataMessage').style.display = 'none';
+            document.getElementById('dataTable').style.display = 'block';
+
+            // Update filtered count
+            document.getElementById('totalFiltered').textContent = data.length.toLocaleString();
+        }
+
+        // Show no data message
+        function showNoDataMessage(message) {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('dataTable').style.display = 'none';
+            document.getElementById('noDataMessage').style.display = 'block';
+            document.getElementById('noDataMessage').querySelector('p').textContent = message;
+        }
+
+        // Apply filters and sorting
+        async function applyFilters() {
+            const bandPercentage = document.getElementById('bandPercentage').value;
+            const sortBy = document.getElementById('sortBy').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+            const searchTerm = document.getElementById('searchTerm').value;
+
+            try {
+                const params = new URLSearchParams({
+                    ema_filter: currentEMAFilter,
+                    band_percentage: bandPercentage,
+                    sort: sortBy,
+                    order: sortOrder,
+                    search: searchTerm
+                });
+
+                const response = await fetch(`/api/filtered-data?${params}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    displayData(result.data);
+                } else {
+                    showNoDataMessage(result.message);
+                }
+            } catch (error) {
+                console.error('Error applying filters:', error);
+                showNoDataMessage('Failed to apply filters.');
+            }
+
+            // Update active filter display for band filters
+            if (currentEMAFilter !== 'all') {
+                setEMAFilter(currentEMAFilter);
+            }
+        }
+
+        // Update data manually
+        async function updateData() {
+            const button = event.target.closest('button');
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/api/update-data');
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    loadEMAData();
+                    alert('Data updated successfully with latest market data!');
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Error updating data:', error);
+                alert('Failed to update data.');
+            } finally {
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            }
+        }
+
+        // Run enhanced setup
+        async function runSetup() {
+            if (!confirm('This will download data for all NIFTY Total Market stocks and calculate EMAs. This may take 30-60 minutes. Continue?')) {
+                return;
+            }
+
+            const button = event.target.closest('button');
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Setting up...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/api/setup');
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    loadEMAData();
+                    alert('Enhanced setup completed successfully!');
+                } else {
+                    alert('Setup failed: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error running setup:', error);
+                alert('Failed to run setup.');
+            } finally {
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            }
+        }
+
+        // Setup auto-refresh functionality
+        function setupAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+
+            function startAutoRefresh() {
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+                autoRefreshInterval = setInterval(loadEMAData, 30000);
+            }
+
+            function stopAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+
+            checkbox.addEventListener('change', function () {
+                if (this.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+
+            if (checkbox.checked) {
+                startAutoRefresh();
+            }
+        }
+
+        // Clear all filters
+        function clearFilters() {
+            document.getElementById('sortBy').value = 'SYMBOL';
+            document.getElementById('sortOrder').value = 'asc';
+            document.getElementById('searchTerm').value = '';
+            document.getElementById('bandPercentage').value = '2.5';
+            setEMAFilter('all');
+        }
+
+        // Export data (placeholder)
+        function exportData() {
+            alert('Export functionality coming soon!');
+        }
+
+        // Update last update time
+        function updateLastUpdateTime(timestamp) {
+            document.getElementById('lastUpdate').textContent = `Last updated: ${timestamp}`;
+        }
+
+        // Set status indicator
+        function setStatus(status) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.className = `status-indicator status-${status}`;
+        }
+    </script>
+</body>
+
+</html>
