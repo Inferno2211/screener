@@ -32,6 +32,47 @@ logger = logging.getLogger(__name__)
 # Initialize Enhanced EMA Screener
 screener = EnhancedEMAScreener()
 
+def check_and_update_data_on_startup():
+    """Check for new data and update if needed on app startup"""
+    try:
+        logger.info("Checking for data updates on startup...")
+        
+        # Check if we need to update data
+        now = datetime.now()
+        market_close_time = now.replace(hour=15, minute=30, second=0, microsecond=0)
+        
+        # Check last update
+        last_update_file = screener.cache_dir / "last_update.json"
+        last_update_date = None
+        
+        if last_update_file.exists():
+            with open(last_update_file, 'r') as f:
+                data = json.load(f)
+                last_update_date = datetime.fromisoformat(data['last_update']).date()
+        
+        # If it's a new day and past market close, trigger update
+        if last_update_date is None or (now.date() > last_update_date and now >= market_close_time):
+            logger.info("New trading day detected, updating data...")
+            success = screener.daily_update_phase()
+            if success:
+                logger.info("Data updated successfully on startup")
+            else:
+                logger.info("No update needed or update failed")
+        else:
+            logger.info("Data is up to date")
+            
+    except Exception as e:
+        logger.error(f"Error checking data on startup: {e}")
+
+# Check for updates on startup (but don't block app initialization)
+import threading
+def startup_check():
+    check_and_update_data_on_startup()
+
+# Run startup check in background thread
+startup_thread = threading.Thread(target=startup_check, daemon=True)
+startup_thread.start()
+
 @app.route('/')
 def index():
     """Main enhanced dashboard page"""
@@ -253,15 +294,20 @@ def get_status():
             'message': str(e)
         })
 
+# Create templates directory if it doesn't exist
+templates_dir = Path('templates')
+templates_dir.mkdir(exist_ok=True)
+
 if __name__ == '__main__':
-    # Create templates directory if it doesn't exist
-    templates_dir = Path('templates')
-    templates_dir.mkdir(exist_ok=True)
-    
     print("Enhanced EMA Screener Web Application")
     print("====================================")
     print("Features: 50/100/200 EMAs, Band Filtering, Dark Mode")
     print("Starting Flask server...")
     print("Open http://localhost:5000 in your browser")
     
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    # Development server
+    app.run(debug=True, host='0.0.0.0', port=5000)
+else:
+    # Production mode (when run with Gunicorn)
+    print("Enhanced EMA Screener - Production Mode")
+    print("=======================================") 
