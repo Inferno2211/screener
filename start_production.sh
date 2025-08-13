@@ -41,11 +41,11 @@ else:
 
 # Start the application with Gunicorn
 echo "Starting Enhanced EMA Screener with Gunicorn..."
-echo "URL: http://localhost:5000"
+echo "URL: http://localhost:5050"
 echo "Logs: logs/gunicorn_access.log and logs/gunicorn_error.log"
 echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
 # Run Gunicorn with configuration
-gunicorn -c gunicorn_config.py wsgi:application 
+gunicorn -c gunicorn_config.py --bind 0.0.0.0:5050 wsgi:application
